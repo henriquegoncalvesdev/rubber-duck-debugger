@@ -45,12 +45,22 @@ export async function analyzeCode(code: string, persona: Persona) {
                 },
             ],
             stream: true,
-            max_tokens: 4000, // Increased to prevent truncation while maintaining cost protection
+            max_tokens: 4000,
+            temperature: 0.7,
+            // Explicitly ensure no tools are sent to avoid strict routing issues with free providers
+            tools: undefined,
+            tool_choice: undefined,
         });
 
         return stream;
     } catch (error: any) {
         console.error('LLM Service Error:', error);
+
+        // Log OpenRouter specific metadata if available
+        if (error.error?.metadata) {
+            console.error('OpenRouter Metadata:', JSON.stringify(error.error.metadata, null, 2));
+        }
+
         // Throw the actual error message so the controller can log it/send it
         throw new Error(error.message || 'Failed to communicate with AI provider');
     }

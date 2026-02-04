@@ -42,7 +42,7 @@ const SessionHistory: React.FC<SessionHistoryProps> = ({
 
             <aside
                 className={cn(
-                    "fixed top-0 left-0 z-40 h-screen bg-card border-r transition-transform duration-300 ease-in-out w-72 flex flex-col pt-16 lg:pt-0 lg:relative lg:h-full lg:w-0 lg:border-none",
+                    "fixed top-0 left-0 z-40 h-screen bg-card border-r transition-transform duration-300 ease-in-out w-72 flex flex-col pt-16 lg:pt-0 lg:relative lg:h-full lg:w-0 lg:border-none overflow-hidden",
                     isOpen ? "translate-x-0 lg:w-72 lg:border-r" : "-translate-x-full lg:translate-x-0"
                 )}
             >
