@@ -16,21 +16,24 @@ const limiter = rateLimit({
 
 // Middleware
 app.use(helmet());
-app.use(cors());
+app.use(cors({
+    origin: process.env.CLIENT_URL || 'http://localhost:3000',
+    methods: ['GET', 'POST'],
+}));
 app.use(express.json());
 app.use(limiter);
 
 // Main Route
 app.post('/debug', async (req, res) => {
     const schema = z.object({
-        code: z.string(),
+        code: z.string().max(5000, "Code snippet is too long (max 5000 chars)"), // Cost Protection
         persona: z.enum(['senior', 'academic', 'duck']).optional(),
     });
 
     const parsed = schema.safeParse(req.body);
 
     if (!parsed.success) {
-        return res.status(400).json({ error: 'Invalid input' });
+        return res.status(400).json({ error: parsed.error.issues[0].message });
     }
 
     const { code, persona } = parsed.data;
@@ -54,14 +57,16 @@ app.post('/debug', async (req, res) => {
         if (error.message && error.message.includes('OPENAI_API_KEY')) {
             return res.status(500).json({ error: 'Server configuration error: Missing API Key' });
         }
-        return res.status(500).json({ error: 'Failed to analyze code' });
+        return res.status(500).json({ error: error.message || 'Failed to analyze code' });
     }
 });
 
 app.post('/generate-docs', async (req, res) => {
-    const schema = z.object({ code: z.string() });
+    const schema = z.object({
+        code: z.string().max(5000, "Code snippet is too long (max 5000 chars)")
+    });
     const parsed = schema.safeParse(req.body);
-    if (!parsed.success) return res.status(400).json({ error: 'Invalid input' });
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0].message });
     const { code } = parsed.data;
 
     try {
