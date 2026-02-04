@@ -27,7 +27,7 @@ app.use(limiter);
 app.post('/debug', async (req, res) => {
     const schema = z.object({
         code: z.string().max(5000, "Code snippet is too long (max 5000 chars)"), // Cost Protection
-        persona: z.enum(['senior', 'academic', 'duck']).optional(),
+        persona: z.enum(['senior', 'academic', 'duck', 'doc_writer']).optional(),
     });
 
     const parsed = schema.safeParse(req.body);
@@ -54,6 +54,10 @@ app.post('/debug', async (req, res) => {
         res.end();
     } catch (error: any) {
         console.error('Streaming error:', error);
+        if (res.headersSent) {
+            res.write(`\n\n[Error: ${error.message || 'Connection lost'}]`);
+            return res.end();
+        }
         if (error.message && error.message.includes('OPENAI_API_KEY')) {
             return res.status(500).json({ error: 'Server configuration error: Missing API Key' });
         }
@@ -78,7 +82,12 @@ app.post('/generate-docs', async (req, res) => {
             if (content) res.write(content);
         }
         res.end();
-    } catch (error) {
+    } catch (error: any) {
+        console.error('Streaming error:', error);
+        if (res.headersSent) {
+            res.write(`\n\n[Error: ${error.message || 'Connection lost'}]`);
+            return res.end();
+        }
         res.status(500).json({ error: 'Failed to generate docs' });
     }
 });

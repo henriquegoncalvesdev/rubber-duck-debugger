@@ -37,7 +37,7 @@ export default function Home() {
       });
 
       if (!res.ok) {
-        if (res.status === 429) throw new Error('You are chatting too fast! Slow down, duckie. 🦆');
+        if (res.status === 429) throw new Error('You are chatting too fast! Slow down.');
         throw new Error(res.statusText);
       }
 
@@ -59,48 +59,13 @@ export default function Home() {
     }
   };
 
-  const handleGenerateDocs = async () => {
-    setIsLoading(true);
-    setResponse('');
-
-    try {
-      const res = await fetch('http://localhost:3001/generate-docs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code }),
-      });
-
-      if (!res.ok) {
-        if (res.status === 429) throw new Error('You are chatting too fast! Slow down, duckie. 🦆');
-        throw new Error(res.statusText);
-      }
-
-      const reader = res.body?.getReader();
-      const decoder = new TextDecoder();
-
-      if (!reader) return;
-
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        const chunk = decoder.decode(value, { stream: true });
-        setResponse((prev) => prev + chunk);
-      }
-    } catch (error) {
-      setResponse('Error: Failed to generate docs.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
     <main className="h-screen w-full bg-background text-foreground flex flex-col overflow-hidden">
-      <header className="p-4 border-b flex items-center justify-between">
-        <h1 className="text-xl font-bold">Rubber Duck Debugger 🦆</h1>
+      <header className="px-6 py-4 border-b flex items-center justify-between bg-card/50 backdrop-blur-sm sticky top-0 z-10">
+        <div className="flex items-center gap-2">
+          <h1 className="text-xl font-semibold tracking-tight">Code Debugger</h1>
+        </div>
         <div className="flex items-center gap-4">
-          <Button variant="outline" onClick={handleGenerateDocs} disabled={isLoading}>
-            Generate Docs
-          </Button>
           <Select value={persona} onValueChange={setPersona}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Select Persona" />
@@ -109,29 +74,40 @@ export default function Home() {
               <SelectItem value="senior">Senior Developer</SelectItem>
               <SelectItem value="academic">Academic Professor</SelectItem>
               <SelectItem value="duck">Rubber Duck</SelectItem>
+              <SelectItem value="doc_writer">Technical Writer</SelectItem>
             </SelectContent>
           </Select>
-          <Button onClick={handleAnalyze} disabled={isLoading}>
-            {isLoading ? 'Thinking...' : 'Debug'}
+          <Button onClick={handleAnalyze} disabled={isLoading} size="default">
+            {isLoading ? 'Analyzing...' : 'Debug'}
           </Button>
         </div>
       </header>
 
       <div className="flex-1 overflow-hidden p-4">
-        <ResizablePanelGroup direction="horizontal" className="h-full rounded-lg border">
-          <ResizablePanel defaultSize={50} minSize={30}>
-            <div className="h-full p-2">
+        <ResizablePanelGroup direction="horizontal" className="h-full rounded-xl border bg-card shadow-sm">
+          <ResizablePanel defaultSize={50} minSize={30} className="bg-background">
+            <div className="h-full p-0">
               <CodeEditor onChange={(val) => setCode(val || '')} initialValue={code} />
             </div>
           </ResizablePanel>
-          <ResizableHandle />
-          <ResizablePanel defaultSize={50} minSize={30}>
-            <div className="h-full p-4 overflow-auto bg-muted/20">
-              <h2 className="text-lg font-semibold mb-2">Analysis</h2>
-              <div className="prose dark:prose-invert max-w-none">
-                <ReactMarkdown rehypePlugins={[rehypeHighlight]}>
-                  {response}
-                </ReactMarkdown>
+          <ResizableHandle withHandle />
+          <ResizablePanel defaultSize={50} minSize={30} className="bg-muted/5">
+            <div className="h-full flex flex-col">
+              <div className="p-4 border-b bg-card/50 backdrop-blur-sm">
+                <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Analysis Result</h2>
+              </div>
+              <div className="flex-1 p-6 overflow-auto">
+                <div className="prose dark:prose-invert max-w-none prose-sm sm:prose-base">
+                  {response ? (
+                    <ReactMarkdown rehypePlugins={[rehypeHighlight]}>
+                      {response}
+                    </ReactMarkdown>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-full text-muted-foreground opacity-50 space-y-4">
+                      <p>Run debug to see analysis here</p>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </ResizablePanel>
