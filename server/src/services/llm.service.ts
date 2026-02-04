@@ -16,7 +16,14 @@ const baseURL = process.env.OPENAI_BASE_URL || defaultBaseURL;
 const modelName = process.env.OPENAI_MODEL_NAME || (openRouterKey ? 'openai/gpt-4o-mini' : 'gpt-4o');
 
 // Fail gracefully if no key is present
-const openai = apiKey ? new OpenAI({ apiKey, baseURL }) : null;
+const openai = apiKey ? new OpenAI({
+    apiKey,
+    baseURL,
+    defaultHeaders: {
+        'HTTP-Referer': process.env.CLIENT_URL || 'http://localhost:3000', // Required for OpenRouter rankings
+        'X-Title': 'Rubber Duck Debugger', // Optional, shows in OpenRouter rankings
+    }
+}) : null;
 
 export async function analyzeCode(code: string, persona: Persona) {
     if (!openai) {
@@ -32,11 +39,13 @@ export async function analyzeCode(code: string, persona: Persona) {
         const stream = await openai.chat.completions.create({
             model: modelName,
             messages: [
-                { role: 'system', content: systemPrompt },
-                { role: 'user', content: `Here is my code:\n\n${code}` },
+                {
+                    role: 'user',
+                    content: `${systemPrompt}\n\n---\n\nHere is the code I need you to look at:\n\n${code}`
+                },
             ],
             stream: true,
-            max_tokens: 1000, // Cost Protection
+            max_tokens: 4000, // Increased to prevent truncation while maintaining cost protection
         });
 
         return stream;

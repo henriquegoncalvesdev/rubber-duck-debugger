@@ -24,7 +24,20 @@ app.use(express.json());
 app.use(limiter);
 
 // Main Route
-app.post('/debug', async (req, res) => {
+const authenticate = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const apiKey = req.headers['x-service-key'];
+    const validKey = process.env.SERVICE_API_KEY;
+
+    // Skip auth if no key is configured (local dev mode without security)
+    if (!validKey) return next();
+
+    if (!apiKey || apiKey !== validKey) {
+        return res.status(401).json({ error: 'Unauthorized: Invalid Service Key' });
+    }
+    next();
+};
+
+app.post('/debug', authenticate, async (req, res) => {
     const schema = z.object({
         code: z.string().max(5000, "Code snippet is too long (max 5000 chars)"), // Cost Protection
         persona: z.enum(['senior', 'academic', 'duck', 'doc_writer']).optional(),
